@@ -1,0 +1,14 @@
+name: audspec
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - dask
+  - jupyterlab
+  - librosa
+  - pandas
+  - pip
+  - python
+  - pip:
+    - git+https://github.com/rsprouse/phonlab
+    - git+https://github.com/rsprouse/audiolabel
