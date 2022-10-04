@@ -17,22 +17,22 @@ class Audspec(object):
     '''
     def __init__(self, fs, step_size, maxcbfiltn):
         super(Audspec, self).__init__()
-        self.fs = fs
-        self.dft_n = 2**(int(np.log2(0.05*fs)))  # choose fft size based on fs
+        self.fs = np.float32(fs)
+        self.dft_n = 2**(np.int32(np.log2(0.05*fs)))  # choose fft size based on fs
         spect_points = int(self.dft_n/2) + 1
         self.spect = np.zeros(spect_points)
         self.spect_times = np.zeros(0)
         self.inc = self.fs/self.dft_n;		# get hz stepsize in fft
 
         self.topbark = self.hz2bark(self.fs/2.0)
-        self.ncoef = int(self.topbark * 3.5)  # number of points in the auditory spectrum
+        self.ncoef = np.int32(self.topbark * 3.5)  # number of points in the auditory spectrum
         self.zinc = self.topbark/(self.ncoef+1)
         self.fft_freqs = np.arange(1, spect_points+1) * self.inc
         self.zfreqs = np.arange(1, self.ncoef+1) * self.zinc
         self.freqs = self.bark2hz(self.zfreqs)
 
-        self.step_size = step_size  # temporal intervals in sec
-        self.maxcbfiltn = maxcbfiltn  # number of points in biggest CB filter
+        self.step_size = np.float32(step_size)  # temporal intervals in sec
+        self.maxcbfiltn = np.int32(maxcbfiltn)  # number of points in biggest CB filter
 
         self.cbfilts = self.make_cb_filters().astype(np.float32)
         self.window = np.hamming(self.dft_n)
@@ -142,9 +142,9 @@ class Audspec(object):
         '''
         
         if (dimension=="frequency"):  # default value
-            steps = np.int(span / self.zinc)
+            steps = np.int32(span / self.zinc)
         else:  # otherwise assume temporal sharpening
-            steps = np.int(span / self.step_size) 
+            steps = np.int32(span / self.step_size)
             
         if steps % 2 == 0:
             steps += 1
@@ -170,7 +170,7 @@ class Audspec(object):
         -------
         1d blur filter
         '''
-        steps = np.int(span / self.zinc)
+        steps = np.int32(span / self.zinc)
         if steps % 2 == 0:
             steps += 1
         mid = int(steps / 2)
@@ -254,12 +254,18 @@ class Audspec(object):
         '''
         data = np.pad(data, [int(self.dft_n/2), int(self.dft_n/2)], 'constant')
         if (np.max(data) < 1):   # floating point but we need 16bit int range
-            data = (data*(2**15)) #.astype(np.int16)
+            data = (data*(2**15)) #.astype(np.int32)
 
         print(f'padded data, dtype is {data.dtype}')
         hop = int(self.step_size * self.fs)
         print(f'making frames of length {self.dft_n} and step {hop}')
         frames = librosa.util.frame(data, frame_length=self.dft_n, hop_length=hop).transpose()
+        self.spect_times = librosa.frames_to_time(
+            np.arange(frames.shape[0]),
+            sr=self.fs,
+            hop_length=hop,
+            n_fft=self.dft_n
+        )
         print(f'made frames, shape {frames.shape}')
         # Add some noise, then scale frames by the window.
         frames = (frames + np.random.normal(0, 1, frames.shape)) * self.window
@@ -272,7 +278,7 @@ class Audspec(object):
         print('spect non-negative')
         dur = data.shape[0] / self.fs
         half_actual_step = hop / self.fs / 2
-        self.spect_times = np.linspace(half_actual_step, dur - half_actual_step, self.spect.shape[0])
+        self.spect_times_linspace = np.linspace(half_actual_step, dur - half_actual_step, self.spect.shape[0])
         return
 
     def make_zgram(self):
