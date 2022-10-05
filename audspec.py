@@ -256,9 +256,7 @@ class Audspec(object):
         if (np.max(data) < 1):   # floating point but we need 16bit int range
             data = (data*(2**15)) #.astype(np.int32)
 
-        print(f'padded data, dtype is {data.dtype}')
         hop = int(self.step_size * self.fs)
-        print(f'making frames of length {self.dft_n} and step {hop}')
         frames = librosa.util.frame(data, frame_length=self.dft_n, hop_length=hop).transpose()
         self.spect_times = librosa.frames_to_time(
             np.arange(frames.shape[0]),
@@ -266,16 +264,11 @@ class Audspec(object):
             hop_length=hop,
             n_fft=self.dft_n
         )
-        print(f'made frames, shape {frames.shape}')
         # Add some noise, then scale frames by the window.
         frames = (frames + np.random.normal(0, 1, frames.shape)) * self.window
-        print('starting rfft')
         A = rfft(frames, **kwargs)
-        print(f'created A, shape {A.shape}')
         self.spect = (np.abs(A) - self.loud).astype(np.float32)
-        print(f'created spect, shape {self.spect.shape}')
         self.spect[self.spect < 1] = 1
-        print('spect non-negative')
         dur = data.shape[0] / self.fs
         half_actual_step = hop / self.fs / 2
         self.spect_times_linspace = np.linspace(half_actual_step, dur - half_actual_step, self.spect.shape[0])
@@ -296,15 +289,9 @@ class Audspec(object):
         -------
         The 2d auditory spectrogram.
         '''
-        print('adding axis')
-        print(f'self.spect shape {self.spect.shape}')
-        print(f'cbfilts shape {self.cbfilts.shape}')
         zgram = self.spect[:, np.newaxis, :] * self.cbfilts[np.newaxis, :, :]
-        print('summing')
         zgram = zgram.sum(axis=2)
-        print('log10')
         zgram = 10 * np.log10(zgram)
-        print('returning')
         return zgram
 
     def save_npz(self, fname, layers={}):
