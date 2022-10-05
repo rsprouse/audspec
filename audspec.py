@@ -322,10 +322,11 @@ class Audspec(object):
             )
         return
 
-    def savez(self, fname, layers={}):
+    def savez(self, fname, **kwargs):
         np.savez(
             fname,
+            allow_pickle=False,   # For better portability.
             **self.__dict__,
-            **layers,
-            **{'layer_names': list(layers.keys())}
+            **kwargs,
+            **{'custom_vars': list(kwargs.keys())}
         )

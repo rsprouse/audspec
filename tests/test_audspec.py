@@ -165,7 +165,12 @@ def test_zgram_save(sine377_with_5_1_igram_lgram_ogram):
     assert(aud.spect.shape[0] == len(aud.spect_times))
     assert(aud.spect.shape[1] == len(aud.fft_freqs))
     assert(aud.zgram.shape[1] == len(aud.freqs))
-    aud.savez('test.npz', layers=filtered_imgs)
+    aud.savez(
+        'test.npz',
+        igram=filtered_imgs['igram'],
+        lgram=filtered_imgs['lgram'],
+        ogram=filtered_imgs['ogram']
+    )
 
 def test_zgram_read():
     '''
@@ -175,7 +180,7 @@ def test_zgram_read():
     for k in d.files:
         print(f'file {k} in archive')
     assert(d['fs'] == fs)
-    assert(np.all(d['layer_names'] == ('igram', 'lgram', 'ogram')))
+    assert(np.all(d['custom_vars'] == ('igram', 'lgram', 'ogram')))
     assert(d['spect'].shape[0] == d['zgram'].shape[0])
     assert(d['spect'].shape[0] == len(d['spect_times']))
     assert(d['spect'].shape[1] == len(d['fft_freqs']))
