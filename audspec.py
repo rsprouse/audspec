@@ -352,19 +352,9 @@ class Audspec(object):
         )
 
     def save_npz(self, fname, layers={}):
-        '''
-        Save current state of Audspec to a .npz file, optionally adding
-        filtered versions of self.zgram.
-        '''
-        if layers != {}:
-            kwargs = {
-                'zgram': np.stack([d[l] for l in layers.keys()]),
-                'zgram_layers': list(layers.keys())
-            }
-        else:
-            kwargs = {}
         np.savez(
             fname,
-            audspec=self.as_structured_array(),
-            **kwargs
+            **self.__dict__,
+            **layers,
+            **{'layer_names': list(layers.keys())}
         )
