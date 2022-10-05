@@ -235,7 +235,7 @@ class Audspec(object):
             return agram
 
         
-    def make_spect(self, data, *args, **kwargs):
+    def _make_spect(self, data, *args, **kwargs):
         '''
         Make an acoustic spectrogram via rfft().
 
@@ -250,15 +250,29 @@ class Audspec(object):
 
         Returns
         -------
-        None. (The 2d acoustic spectrogram is added to self.spect.)
+        A tuple, consisting of:
+
+        spect: 2D array
+        The acoustic spectrogram of shape (times, frequency bins).
+
+        spect_times: 1D array
+        The times of each spectral slice in `spect`.
+
+        TODO: TO BE REMOVED
+        spect_times_linspace: 1D array
+        The times of each spectral slice in `spect`, alternative calculation.
         '''
         data = np.pad(data, [int(self.dft_n/2), int(self.dft_n/2)], 'constant')
         if (np.max(data) < 1):   # floating point but we need 16bit int range
             data = (data*(2**15)) #.astype(np.int32)
 
         hop = int(self.step_size * self.fs)
-        frames = librosa.util.frame(data, frame_length=self.dft_n, hop_length=hop).transpose()
-        self.spect_times = librosa.frames_to_time(
+        frames = librosa.util.frame(
+            data,
+            frame_length=self.dft_n,
+            hop_length=hop
+        ).transpose()
+        spect_times = librosa.frames_to_time(
             np.arange(frames.shape[0]),
             sr=self.fs,
             hop_length=hop,
@@ -267,12 +281,14 @@ class Audspec(object):
         # Add some noise, then scale frames by the window.
         frames = (frames + np.random.normal(0, 1, frames.shape)) * self.window
         A = rfft(frames, **kwargs)
-        self.spect = (np.abs(A) - self.loud).astype(self.spect.dtype)
-        self.spect[self.spect < 1] = 1
+        spect = (np.abs(A) - self.loud).astype(self.spect.dtype)
+        spect[spect < 1] = 1
         dur = data.shape[0] / self.fs
         half_actual_step = hop / self.fs / 2
-        self.spect_times_linspace = np.linspace(half_actual_step, dur - half_actual_step, self.spect.shape[0])
-        return
+        spect_times_linspace = np.linspace(
+                half_actual_step, dur - half_actual_step, spect.shape[0]
+        )
+        return (spect, spect_times, spect_times_linspace)
 
     def make_zgram(self, data, *args, **kwargs):
         '''
@@ -287,13 +303,16 @@ class Audspec(object):
 
         kwargs: dict, optional
         Keyword arguments will be passed to the scipy.fft.rfft() function in
-        make_spect().
+        _make_spect().
 
         Returns
         -------
         The 2d auditory spectrogram.
         '''
-        self.make_spect(data, kwargs)
+        (spect, spect_times, spect_times_linspace) = self._make_spect(data, kwargs)
+        self.spect = spect
+        self.spect_times = spect_times
+        self.spect_times_linspace = spect_times_linspace
         zgram = self.spect[:, np.newaxis, :] * self.cbfilts[np.newaxis, :, :]
         self.zgram = \
             10 * np.log10(
