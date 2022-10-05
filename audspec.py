@@ -15,31 +15,31 @@ class Audspec(object):
     An Audspec object is an instantiation of analysis parameters and routines
     for creating auditory spectrograms.
     '''
-    def __init__(self, fs, step_size, maxcbfiltn):
+    def __init__(self, fs, step_size, maxcbfiltn, float_t=np.float32, int_t=np.int32):
         super(Audspec, self).__init__()
-        self.fs = np.float32(fs)
-        self.dft_n = 2**(np.int32(np.log2(0.05*fs)))  # choose fft size based on fs
-        spect_points = int(self.dft_n/2) + 1
-        self.spect = np.zeros(spect_points)
-        self.spect_times = np.zeros(0)
+        self.fs = float_t(fs)
+        self.dft_n = 2**(int_t(np.log2(0.05*fs)))  # choose fft size based on fs
+        spect_points = int_t(self.dft_n/2) + 1
+        self.spect = np.zeros(spect_points, dtype=float_t)
+        self.spect_times = np.zeros(0, dtype=float_t)
         self.inc = self.fs/self.dft_n;		# get hz stepsize in fft
 
         self.topbark = self.hz2bark(self.fs/2.0)
-        self.ncoef = np.int32(self.topbark * 3.5)  # number of points in the auditory spectrum
+        self.ncoef = int_t(self.topbark * 3.5)  # number of points in the auditory spectrum
         self.zinc = self.topbark/(self.ncoef+1)
         self.fft_freqs = np.arange(1, spect_points+1) * self.inc
         self.zfreqs = np.arange(1, self.ncoef+1) * self.zinc
         self.freqs = self.bark2hz(self.zfreqs)
 
-        self.step_size = np.float32(step_size)  # temporal intervals in sec
-        self.maxcbfiltn = np.int32(maxcbfiltn)  # number of points in biggest CB filter
+        self.step_size = float_t(step_size)  # temporal intervals in sec
+        self.maxcbfiltn = int_t(maxcbfiltn)  # number of points in biggest CB filter
 
-        self.cbfilts = self.make_cb_filters().astype(np.float32)
+        self.cbfilts = self.make_cb_filters().astype(float_t)
         self.window = np.hamming(self.dft_n)
 
         # TODO: add citation for these polynomial coefficients - Moore & Glasberg, 1987?
         loudp = Polynomial([2661.8, -3690.6, 1917.4, -440.77, 37.706])
-        self.loud = 10.0**( loudp(np.log10(self.fft_freqs)) / 10.0 ).astype(np.float32)
+        self.loud = 10.0**( loudp(np.log10(self.fft_freqs)) / 10.0 ).astype(float_t)
 
     def hz2bark(self, hz):
         '''
@@ -142,9 +142,9 @@ class Audspec(object):
         '''
         
         if (dimension=="frequency"):  # default value
-            steps = np.int32(span / self.zinc)
+            steps = int(span / self.zinc)
         else:  # otherwise assume temporal sharpening
-            steps = np.int32(span / self.step_size)
+            steps = int(span / self.step_size)
             
         if steps % 2 == 0:
             steps += 1
@@ -170,7 +170,7 @@ class Audspec(object):
         -------
         1d blur filter
         '''
-        steps = np.int32(span / self.zinc)
+        steps = int(span / self.zinc)
         if steps % 2 == 0:
             steps += 1
         mid = int(steps / 2)
@@ -267,7 +267,7 @@ class Audspec(object):
         # Add some noise, then scale frames by the window.
         frames = (frames + np.random.normal(0, 1, frames.shape)) * self.window
         A = rfft(frames, **kwargs)
-        self.spect = (np.abs(A) - self.loud).astype(np.float32)
+        self.spect = (np.abs(A) - self.loud).astype(self.spect.dtype)
         self.spect[self.spect < 1] = 1
         dur = data.shape[0] / self.fs
         half_actual_step = hop / self.fs / 2
