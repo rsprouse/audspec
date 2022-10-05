@@ -307,50 +307,6 @@ class Audspec(object):
         print('returning')
         return zgram
 
-    def as_structured_array(self):
-        '''
-        A numpy structured array representing self properties.
-        '''
-        dtypes = np.dtype([
-            ('fs', self.fs.dtype),
-            ('dft_n', self.dft_n.dtype),
-            ('spect', self.spect.dtype, self.spect.shape),
-            ('spect_times', self.spect_times.dtype, self.spect_times.shape),
-            ('inc', self.inc.dtype),
-            ('topbark', self.topbark.dtype),
-            ('ncoef', self.ncoef.dtype),
-            ('zinc', self.zinc.dtype),
-            ('fft_freqs', self.fft_freqs.dtype, self.fft_freqs.shape),
-            ('zfreqs', self.zfreqs.dtype, self.zfreqs.shape),
-            ('freqs', self.freqs.dtype, self.freqs.shape),
-            ('step_size', self.step_size.dtype),
-            ('maxcbfiltn', self.maxcbfiltn.dtype),
-            ('cbfilts', self.cbfilts.dtype, self.cbfilts.shape),
-            ('window', self.window.dtype, self.window.shape),
-            ('loud', self.loud.dtype, self.loud.shape),
-        ])
-        return np.array(
-            (
-                self.fs,
-                self.dft_n,
-                self.spect,
-                self.spect_times,
-                self.inc,
-                self.topbark,
-                self.ncoef,
-                self.zinc,
-                self.fft_freqs,
-                self.zfreqs,
-                self.freqs,
-                self.step_size,
-                self.maxcbfiltn,
-                self.cbfilts,
-                self.window,
-                self.loud
-            ),
-            dtype=dtypes
-        )
-
     def save_npz(self, fname, layers={}):
         np.savez(
             fname,
