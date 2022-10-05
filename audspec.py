@@ -125,9 +125,9 @@ class Audspec(object):
             cbfilts[j, startidx:endidx] = coef
         return cbfilts
 
-    def create_sharp_filter(self, span=4, mult=3, dimension = "frequency"):
+    def create_sharp_filter(self, span=4, mult=3, dimension="frequency"):
         '''
-        Create and return a 1d sharpening filter symmetric in frequency, or time
+        Create and return a 1d sharpening filter symmetric in frequency, or time.
 
         Parameters
         ----------
@@ -237,7 +237,7 @@ class Audspec(object):
         
     def _make_spect(self, data, *args, **kwargs):
         '''
-        Make an acoustic spectrogram via rfft().
+        Private function to make an acoustic spectrogram via rfft().
 
         Parameters
         ----------
@@ -298,8 +298,8 @@ class Audspec(object):
         Parameters
         ----------
 
-        data: 1d array
-        Audio data.
+        data: 1d array or str
+        Audio data, either as a numpy array or str representing .
 
         kwargs: dict, optional
         Keyword arguments will be passed to the scipy.fft.rfft() function in
@@ -307,8 +307,10 @@ class Audspec(object):
 
         Returns
         -------
-        The 2d auditory spectrogram.
+        None (The 2d auditory spectrogram is stored in self.zgram.)
         '''
+        if not isinstance(data, np.ndarray):
+            data, _ = librosa.load(data, sr=self.fs)
         (spect, spect_times, spect_times_linspace) = self._make_spect(data, kwargs)
         self.spect = spect
         self.spect_times = spect_times
@@ -320,7 +322,7 @@ class Audspec(object):
             )
         return
 
-    def save_npz(self, fname, layers={}):
+    def savez(self, fname, layers={}):
         np.savez(
             fname,
             **self.__dict__,
