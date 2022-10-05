@@ -22,7 +22,7 @@ class Audspec(object):
         spect_points = int_t(self.dft_n/2) + 1
         self.spect = np.zeros(spect_points, dtype=float_t)
         self.spect_times = np.zeros(0, dtype=float_t)
-        self.inc = self.fs/self.dft_n;		# get hz stepsize in fft
+        self.inc = self.fs/self.dft_n;   # get hz stepsize in fft
 
         self.topbark = self.hz2bark(self.fs/2.0)
         self.ncoef = int_t(self.topbark * 3.5)  # number of points in the auditory spectrum
@@ -274,25 +274,32 @@ class Audspec(object):
         self.spect_times_linspace = np.linspace(half_actual_step, dur - half_actual_step, self.spect.shape[0])
         return
 
-    def make_zgram(self):
+    def make_zgram(self, data, *args, **kwargs):
         '''
-        Make an auditory spectrogram by applying the Patterson filters to the
-        acoustic spectrogram.
+        Make an auditory spectrogram by creating an acoustic spectrogram and
+        then applying the Patterson filters to it.
 
         Parameters
         ----------
 
-        spect: 2d array
-        Acoustic spectrogram.
+        data: 1d array
+        Audio data.
+
+        kwargs: dict, optional
+        Keyword arguments will be passed to the scipy.fft.rfft() function in
+        make_spect().
 
         Returns
         -------
         The 2d auditory spectrogram.
         '''
+        self.make_spect(data, kwargs)
         zgram = self.spect[:, np.newaxis, :] * self.cbfilts[np.newaxis, :, :]
-        zgram = zgram.sum(axis=2)
-        zgram = 10 * np.log10(zgram)
-        return zgram
+        self.zgram = \
+            10 * np.log10(
+                zgram.sum(axis=2)
+            )
+        return
 
     def save_npz(self, fname, layers={}):
         np.savez(
