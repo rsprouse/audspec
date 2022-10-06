@@ -18,6 +18,12 @@ cd audspec
 python setup.py install
 ```
 
+Run tests with:
+
+```bash
+python -m pytest    # From the source root directory
+```
+
 ## Synopsis
 
 To create and cache an auditory spectrogram:
