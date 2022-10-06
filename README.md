@@ -15,7 +15,7 @@ Or
 ```bash
 git clone https://github.com/rsprouse/audspec
 cd audspec
-python setup.py instal
+python setup.py install
 ```
 
 ## Synopsis
@@ -41,6 +41,6 @@ For more detailed usage see the notebooks in the [`doc`](doc) directory.
 
 ## Authors
 
-Keith Johnson <keithjohnson@berkeley.edu> is the primary author.
+Keith Johnson (keithjohnson@berkeley.edu) is the primary author.
 
-Minor improvements and documentation notebooks by Ronald L. Sprouse <ronald@berkeley.edu>.
+Minor improvements and documentation notebooks by Ronald L. Sprouse (ronald@berkeley.edu).
