@@ -325,7 +325,6 @@ class Audspec(object):
     def savez(self, fname, **kwargs):
         np.savez(
             fname,
-            allow_pickle=False,   # For better portability.
             **self.__dict__,
             **kwargs,
             **{'custom_vars': list(kwargs.keys())}
