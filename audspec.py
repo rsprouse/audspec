@@ -341,4 +341,6 @@ class Audspec(object):
             for varname, val in self.__dict__.items():
                 if varname not in arrays:
                     print(f'saving attribute {varname}')
-                    root.attrs.create(varname, data=getattr(self, varname), shape=())
+                    root.attrs.create(
+                        varname, data=getattr(self, varname), shape=()
+                    )
