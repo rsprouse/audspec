@@ -5,10 +5,12 @@ Created on Tue Oct 24 14:19:18 2017
 
 @author: ubuntu
 """
-import numpy as np
+import h5py
+import itertools
 import librosa
-from scipy.fft import rfft
+import numpy as np
 from numpy.polynomial import Polynomial
+from scipy.fft import rfft
 
 class Audspec(object):
     '''
@@ -257,10 +259,6 @@ class Audspec(object):
 
         spect_times: 1D array
         The times of each spectral slice in `spect`.
-
-        TODO: TO BE REMOVED
-        spect_times_linspace: 1D array
-        The times of each spectral slice in `spect`, alternative calculation.
         '''
         data = np.pad(data, [int(self.dft_n/2), int(self.dft_n/2)], 'constant')
         if (np.max(data) < 1):   # floating point but we need 16bit int range
@@ -285,10 +283,7 @@ class Audspec(object):
         spect[spect < 1] = 1
         dur = data.shape[0] / self.fs
         half_actual_step = hop / self.fs / 2
-        spect_times_linspace = np.linspace(
-                half_actual_step, dur - half_actual_step, spect.shape[0]
-        )
-        return (spect, spect_times, spect_times_linspace)
+        return (spect, spect_times)
 
     def make_zgram(self, data, *args, **kwargs):
         '''
@@ -311,10 +306,9 @@ class Audspec(object):
         '''
         if not isinstance(data, np.ndarray):
             data, _ = librosa.load(data, sr=self.fs)
-        (spect, spect_times, spect_times_linspace) = self._make_spect(data, kwargs)
+        (spect, spect_times) = self._make_spect(data, kwargs)
         self.spect = spect
         self.spect_times = spect_times
-        self.spect_times_linspace = spect_times_linspace
         zgram = self.spect[:, np.newaxis, :] * self.cbfilts[np.newaxis, :, :]
         self.zgram = \
             10 * np.log10(
@@ -329,3 +323,22 @@ class Audspec(object):
             **kwargs,
             **{'custom_vars': list(kwargs.keys())}
         )
+
+    def saveh5(self, fname, **kwargs):
+        arrays = [
+            'cbfiltn', 'cbfilts', 'fft_freqs', 'freqs', 'loud', \
+            'spect', 'spect_times', 'window', 'zfreqs', 'zgram'
+        ]
+        with h5py.File(fname, 'w') as f:
+            root = f['/']
+            for varname in itertools.chain(arrays, kwargs.keys()):
+                print(f'saving array var {varname}')
+                try:
+                    data = getattr(self, varname)
+                except AttributeError:
+                    data = kwargs[varname]
+                f.create_dataset(varname, data=data, compression='gzip')
+            for varname, val in self.__dict__.items():
+                if varname not in arrays:
+                    print(f'saving attribute {varname}')
+                    root.attrs.create(varname, data=getattr(self, varname), shape=())
