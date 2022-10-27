@@ -285,7 +285,7 @@ class Audspec(object):
         half_actual_step = hop / self.fs / 2
         return (spect, spect_times)
 
-    def make_zgram(self, data, *args, **kwargs):
+    def make_zgram(self, data, chan=None, **kwargs):
         '''
         Make an auditory spectrogram by creating an acoustic spectrogram and
         then applying the Patterson filters to it.
@@ -296,6 +296,10 @@ class Audspec(object):
         data: 1d array or str
         Audio data, either as a numpy array or str representing .
 
+        chan: int (ignored for mono; None)
+        The channel from the .wav file to analyze. Required for multichannel
+        input; ignored for mono. Use 0 for the first channel, 1 for the second.
+
         kwargs: dict, optional
         Keyword arguments will be passed to the scipy.fft.rfft() function in
         _make_spect().
@@ -305,7 +309,12 @@ class Audspec(object):
         None (The 2d auditory spectrogram is stored in self.zgram.)
         '''
         if not isinstance(data, np.ndarray):
-            data, _ = librosa.load(data, sr=self.fs)
+            data, _ = librosa.load(data, sr=self.fs, mono=False)
+        if len(data.shape) > 1:
+            if chan is None:
+                raise('`chan` parameter required for multichannel audio. Use 0 for first channel.')
+            data = data[chan]
+
         (spect, spect_times) = self._make_spect(data, kwargs)
         self.spect = spect
         self.spect_times = spect_times
