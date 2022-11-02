@@ -33,8 +33,6 @@ from audspec import Audspec
 
 aud = Audspec(fs, step_size=0.005, maxcbfiltn=100)
 aud.make_zgram('myaudio.wav')
-# or aud.make_zgram('myaudio.wav', chan=1)   # for the right channel of a stereo file
-
 aud.savez('myaudio.audspec.npz')
 ```
 
