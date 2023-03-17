@@ -38,11 +38,12 @@ class Audspec(object):
 
         self.cbfilts = self.make_cb_filters().astype(float_t)
         self.window = np.hamming(self.dft_n)
-
-        # TODO: add citation for these polynomial coefficients - Moore & Glasberg, 1987?
-        loudp = Polynomial([2661.8, -3690.6, 1917.4, -440.77, 37.706])
-        self.loud = 10.0**( loudp(np.log10(self.fft_freqs)) / 10.0 ).astype(float_t)
-
+        # see loudness_function.ipynb   
+        loudpoly = Polynomial([22.57, -11.46, -52.58, 226.97, 41.05, -1415.86, 
+                 925.53, 5216.88, -5157.93, -10245.93, 11386.57, 
+                 9702.65, -11213.73, -3484.65, 4079.037], domain=[20,20000])
+        self.loud = (10.0**(-loudpoly(self.fft_freqs)/10.0)).astype(float_t)
+        
     def hz2bark(self, hz):
         '''
         Convert frequency in Hz to Bark using the Schroeder 1977 formula.
@@ -225,8 +226,7 @@ class Audspec(object):
         if half_rectify is True:
             agram[agram < 0] = 0
 
-        # Rescale spectrogram values as a ratio of the distance of each
-        # value from the minimum to the range of values in the spectrogram.
+        # Rescale spectrogram values as relative magnitude.
         mymin = np.min(agram)
         mymax = np.max(agram)
         agram = (agram - mymin) / (mymax - mymin)
@@ -240,6 +240,7 @@ class Audspec(object):
     def _make_spect(self, data, *args, **kwargs):
         '''
         Private function to make an acoustic spectrogram via rfft().
+        And add equal loudness contour.
 
         Parameters
         ----------
@@ -278,11 +279,11 @@ class Audspec(object):
         )
         # Add some noise, then scale frames by the window.
         frames = (frames + np.random.normal(0, 1, frames.shape)) * self.window
-        A = rfft(frames, **kwargs)
-        spect = (np.abs(A) - self.loud).astype(self.spect.dtype)
-        spect[spect < 1] = 1
-        dur = data.shape[0] / self.fs
-        half_actual_step = hop / self.fs / 2
+        A = 2/self.dft_n * rfft(frames, **kwargs)
+        spect = (np.abs(A)).astype(self.spect.dtype)
+        #spect[spect < 1] = 1
+        #dur = data.shape[0] / self.fs
+        #half_actual_step = hop / self.fs / 2
         return (spect, spect_times)
 
     def make_zgram(self, data, chan=None, **kwargs):
@@ -316,7 +317,7 @@ class Audspec(object):
             data = data[chan]
 
         (spect, spect_times) = self._make_spect(data, kwargs)
-        self.spect = spect
+        self.spect = spect + self.loud
         self.spect_times = spect_times
         zgram = self.spect[:, np.newaxis, :] * self.cbfilts[np.newaxis, :, :]
         self.zgram = \
@@ -353,3 +354,4 @@ class Audspec(object):
                     root.attrs.create(
                         varname, data=getattr(self, varname), shape=()
                     )
+    
